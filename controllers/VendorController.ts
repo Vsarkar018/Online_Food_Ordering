@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { VendorLoginInputs } from '../dto';
+import { EditVendorInputs, VendorLoginInputs } from '../dto';
 import { FindVendor } from './AdminController';
 import { StatusCodes } from 'http-status-codes';
 import { GenerateToken, ValidatePassword } from '../utility';
@@ -41,7 +41,6 @@ export const GetVendorProfile = async (
   if (user) {
     const existingUser = await FindVendor(user._id);
     return res.status(StatusCodes.OK).json(existingUser);
-    console.log("i'm reachbale");
   }
   return res
     .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -52,10 +51,49 @@ export const UpdateVendorProfile = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {};
+) => {
+  const { foodTypes, name, address, phone } = <EditVendorInputs>req.body;
+  const user = req.user;
+
+  if (user) {
+    const existingUser = await FindVendor(user._id);
+    if (existingUser !== null) {
+      existingUser.name = name;
+      existingUser.foodTypes = foodTypes;
+      existingUser.phone = phone;
+      existingUser.address = address;
+      const saveResult = await existingUser.save();
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: 'User Updated', data: saveResult });
+    }
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: 'Something went wrong' });
+  }
+  return res
+    .status(StatusCodes.INTERNAL_SERVER_ERROR)
+    .json({ message: 'Vendor information not found' });
+};
 
 export const UpdateVendorService = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {};
+) => {
+  const user = req.user;
+  if (user) {
+    const existingUser = await FindVendor(user._id);
+    if (existingUser !== null) {
+      existingUser.serviceAvailable = !existingUser.serviceAvailable;
+      const savedResult = await existingUser.save();
+      return res.status(StatusCodes.OK).json(savedResult);
+    }
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: 'Something went wrong' });
+  }
+  return res
+    .status(StatusCodes.INTERNAL_SERVER_ERROR)
+    .json({ message: 'Vendor information not found' });
+};
